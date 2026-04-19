@@ -1,0 +1,39 @@
+[package]
+name = "rover_runtime"
+version = "0.1.0"
+edition = "2024"
+license = "MPL-2.0"
+description = "Per-browser Servo runtime driven by Rover (Elixir). Speaks length-prefixed MessagePack over stdio."
+publish = false
+
+[[bin]]
+name = "rover_runtime"
+path = "src/main.rs"
+
+[dependencies]
+# Wire format + serialization
+rmp-serde = "1.3"
+serde = { version = "1", features = ["derive"] }
+serde_bytes = "0.11"
+serde_json = "1"
+thiserror = "2"
+
+# Image encoding for screenshots
+image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
+
+# Page / URL handling
+url = "2.5"
+dpi = "0.1"
+cookie = "0.18"
+
+# Servo (path dep during development; will be swapped for git+rev when publishing)
+servo = { path = "../../servo_rust/components/servo", default-features = false, features = ["js_jit", "baked-in-resources"] }
+
+# Logging to stderr; BEAM captures and routes to Logger
+log = "0.4"
+env_logger = { version = "0.11", default-features = false, features = ["humantime"] }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

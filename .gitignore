@@ -1,0 +1,26 @@
+# Elixir
+/_build/
+/cover/
+/deps/
+/doc/
+/.fetch
+erl_crash.dump
+*.ez
+*.beam
+/config/*.secret.exs
+.elixir_ls/
+
+# Rust
+/native/*/target/
+# Cargo.lock is committed: rover_runtime is a binary crate, and pinning
+# the full dep tree (including Servo's revision) matters for reproducible
+# builds in CI and on users' machines.
+
+# Servo source checkout (local convenience only — library depends on servo via git in Cargo.toml)
+/servo_rust/
+
+# Precompiled NIF checksums — regenerated per release
+# checksum-*.exs  # keep these, actually; commit when releasing
+
+# macOS
+.DS_Store
