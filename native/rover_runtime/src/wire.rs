@@ -8,7 +8,7 @@ use std::io::{self, BufReader, Read, Write};
 
 use crate::engine::Engine;
 use crate::error::RoverError;
-use crate::protocol::{Envelope, Notification, Request, Response, PROTOCOL_VERSION};
+use crate::protocol::{Envelope, Notification, PROTOCOL_VERSION, Request, Response};
 
 const MAX_FRAME_LEN: u32 = 64 * 1024 * 1024; // 64 MiB; screenshots can be large
 
@@ -55,7 +55,11 @@ pub fn run() -> io::Result<()> {
 
 fn dispatch(engine: &mut Option<Engine>, request: Request) -> Response {
     match request {
-        Request::Init { proxy, user_agent, viewport } => match Engine::new(proxy, user_agent, viewport) {
+        Request::Init {
+            proxy,
+            user_agent,
+            viewport,
+        } => match Engine::new(proxy, user_agent, viewport) {
             Ok(new_engine) => {
                 *engine = Some(new_engine);
                 Response::Ack
@@ -66,9 +70,7 @@ fn dispatch(engine: &mut Option<Engine>, request: Request) -> Response {
         other => match engine.as_mut() {
             Some(engine) => engine.handle(other),
             None => Response::Error {
-                error: RoverError::Runtime(
-                    "runtime not initialized (send Init first)".into(),
-                ),
+                error: RoverError::Runtime("runtime not initialized (send Init first)".into()),
             },
         },
     }
@@ -98,7 +100,12 @@ fn read_frame(r: &mut impl Read) -> io::Result<Option<Vec<u8>>> {
 fn write_response(w: &mut impl Write, id: u64, response: &Response) -> io::Result<()> {
     // Outbound envelope: `{id, kind: "response", payload: ...}`.
     // The Elixir side uses `id == 0` to mean "out-of-band notification".
-    let envelope = OutboundEnvelope { id, kind: "response", response: Some(response), notification: None };
+    let envelope = OutboundEnvelope {
+        id,
+        kind: "response",
+        response: Some(response),
+        notification: None,
+    };
     write_envelope(w, &envelope)
 }
 

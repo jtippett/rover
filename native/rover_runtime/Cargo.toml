@@ -26,7 +26,17 @@ url = "2.5"
 dpi = "0.1"
 cookie = "0.18"
 
-# Servo (path dep during development; will be swapped for git+rev when publishing)
+# Servo dep.
+#
+# Local development: clone servo into `../../servo_rust` at the revision below.
+# CI / release builds: the `release.yml` workflow clones Servo to the same path
+# at this exact rev, so the path dep below resolves identically.
+#
+# Pinned Servo revision (update this, release.yml, and the local clone together):
+#   678f9d7a47778d2a02ca5e1d2ee4b3cd2b3c2bc8
+#
+# We use a path dep rather than a git dep so cargo doesn't re-clone the
+# 500MB+ Servo tree on every build in a fresh workspace.
 servo = { path = "../../servo_rust/components/servo", default-features = false, features = ["js_jit", "baked-in-resources"] }
 
 # Logging to stderr; BEAM captures and routes to Logger

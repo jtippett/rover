@@ -15,20 +15,19 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use dpi::PhysicalSize;
-use image::{ColorType, ImageEncoder, RgbaImage, codecs::jpeg::JpegEncoder, codecs::png::PngEncoder};
+use image::{
+    ColorType, ImageEncoder, RgbaImage, codecs::jpeg::JpegEncoder, codecs::png::PngEncoder,
+};
 use log::info;
 use servo::{
-    DevicePoint, EventLoopWaker, InputEvent, JSValue, LoadStatus, MouseButton,
-    MouseButtonAction, MouseButtonEvent, MouseMoveEvent, Preferences, RenderingContext, Servo,
-    ServoBuilder, SoftwareRenderingContext, WebView, WebViewBuilder, WebViewDelegate,
-    WebViewPoint,
+    DevicePoint, EventLoopWaker, InputEvent, JSValue, LoadStatus, MouseButton, MouseButtonAction,
+    MouseButtonEvent, MouseMoveEvent, Preferences, RenderingContext, Servo, ServoBuilder,
+    SoftwareRenderingContext, WebView, WebViewBuilder, WebViewDelegate, WebViewPoint,
 };
 use url::Url;
 
 use crate::error::{Result, RoverError};
-use crate::protocol::{
-    CookieInfo, ImageFormat, JsonValue, PageInfo, Request, Response, Viewport,
-};
+use crate::protocol::{CookieInfo, ImageFormat, JsonValue, PageInfo, Request, Response, Viewport};
 
 const SPIN_SLEEP: Duration = Duration::from_millis(1);
 const WAIT_POLL_INTERVAL: Duration = Duration::from_millis(25);
@@ -135,9 +134,7 @@ impl Engine {
                 to_ack(self.select_option(&selector, &value))
             }
 
-            Request::Screenshot { format, quality } => {
-                to_image(self.screenshot(format, quality))
-            }
+            Request::Screenshot { format, quality } => to_image(self.screenshot(format, quality)),
 
             Request::GetCookies => to_cookies(self.get_cookies()),
             Request::SetCookie { cookie } => to_ack(self.set_cookie(&cookie)),
@@ -148,7 +145,8 @@ impl Engine {
     // ── navigation ─────────────────────────────────────────────────────────
 
     fn navigate(&mut self, url: &str, timeout_ms: u64) -> Result<PageInfo> {
-        let parsed = Url::parse(url).map_err(|e| RoverError::Navigation(format!("bad URL: {e}")))?;
+        let parsed =
+            Url::parse(url).map_err(|e| RoverError::Navigation(format!("bad URL: {e}")))?;
         self.webview.load(parsed.clone());
 
         // `load_status` may already be `Complete` from the previous page —
@@ -229,7 +227,9 @@ impl Engine {
         match stored.borrow_mut().take() {
             Some(Ok(value)) => Ok(value),
             Some(Err(message)) => Err(RoverError::Evaluation(message)),
-            None => Err(RoverError::Evaluation("evaluator returned no result".into())),
+            None => Err(RoverError::Evaluation(
+                "evaluator returned no result".into(),
+            )),
         }
     }
 
@@ -501,7 +501,9 @@ impl Engine {
         let parsed = cookie::Cookie::parse(cookie_string.to_string())
             .map_err(|e| RoverError::InvalidArgument(format!("bad cookie: {e}")))?;
 
-        self.servo.site_data_manager().set_cookie_for_url(url, parsed);
+        self.servo
+            .site_data_manager()
+            .set_cookie_for_url(url, parsed);
         Ok(())
     }
 
@@ -606,11 +608,9 @@ fn json_of(value: JSValue) -> JsonValue {
             JsonValue::String(s)
         }
         JSValue::Array(items) => JsonValue::Array(items.into_iter().map(json_of).collect()),
-        JSValue::Object(map) => JsonValue::Object(
-            map.into_iter()
-                .map(|(k, v)| (k, json_of(v)))
-                .collect(),
-        ),
+        JSValue::Object(map) => {
+            JsonValue::Object(map.into_iter().map(|(k, v)| (k, json_of(v))).collect())
+        }
     }
 }
 
@@ -723,4 +723,3 @@ impl WebViewDelegate for NullDelegate {
         webview.paint();
     }
 }
-

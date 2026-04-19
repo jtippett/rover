@@ -125,7 +125,9 @@ defmodule Rover.Test.Server do
   get "/cookie-jar" do
     conn
     |> Plug.Conn.put_resp_cookie("rover_tracker", "baked", http_only: true)
-    |> put_html("<p id=\"c\"><script>document.getElementById('c').textContent = document.cookie</script></p>")
+    |> put_html(
+      "<p id=\"c\"><script>document.getElementById('c').textContent = document.cookie</script></p>"
+    )
   end
 
   match _ do

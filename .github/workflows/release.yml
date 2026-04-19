@@ -1,0 +1,119 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag name (e.g. v0.1.0) — dry-run builds only, no release upload'
+        required: true
+        type: string
+
+permissions:
+  contents: write  # create releases + upload assets
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-24.04
+          - target: aarch64-unknown-linux-gnu
+            runner: ubuntu-24.04-arm
+          - target: aarch64-apple-darwin
+            runner: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential ca-certificates ccache clang cmake curl g++ git gperf \
+            libdbus-1-dev libfreetype6-dev libgl1-mesa-dri libgles2-mesa-dev \
+            libglib2.0-dev libharfbuzz-dev liblzma-dev libudev-dev libunwind-dev \
+            libvulkan1 libx11-dev libxcb-render0-dev libxcb-shape0-dev \
+            libxcb-xfixes0-dev libxmu-dev libxmu6 libegl1-mesa-dev llvm-dev m4 \
+            xorg-dev libxkbcommon0 libxkbcommon-x11-0 pkg-config
+
+      - name: Install macOS system dependencies
+        if: runner.os == 'macOS'
+        run: |
+          brew install cmake pkg-config
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      # Check out Servo into the path our Cargo.toml expects.
+      # Keep this ref in sync with the comment in native/rover_runtime/Cargo.toml.
+      - name: Check out Servo (pinned)
+        uses: actions/checkout@v4
+        with:
+          repository: servo/servo
+          ref: 678f9d7a47778d2a02ca5e1d2ee4b3cd2b3c2bc8
+          path: servo_rust
+
+      - name: Cache cargo registry + target
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: native/rover_runtime
+          key: release-${{ matrix.target }}
+          cache-targets: true
+          cache-on-failure: false
+
+      - name: Build rover_runtime (release)
+        working-directory: native/rover_runtime
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Package
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TAG="${GITHUB_REF_NAME:-${{ github.event.inputs.tag }}}"
+          VERSION="${TAG#v}"
+          TARGET="${{ matrix.target }}"
+          PKG="rover_runtime-v${VERSION}-${TARGET}.tar.gz"
+
+          mkdir -p dist
+          cd native/rover_runtime/target/${TARGET}/release
+          tar -czf "${GITHUB_WORKSPACE}/dist/${PKG}" rover_runtime
+
+          cd "${GITHUB_WORKSPACE}/dist"
+          if command -v shasum >/dev/null; then
+            shasum -a 256 "${PKG}" > "${PKG}.sha256"
+          else
+            sha256sum "${PKG}" > "${PKG}.sha256"
+          fi
+
+          echo "package=${PKG}" >> "${GITHUB_OUTPUT}"
+          echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rover_runtime-${{ matrix.target }}
+          path: |
+            dist/${{ steps.package.outputs.package }}
+            dist/${{ steps.package.outputs.package }}.sha256
+          retention-days: 14
+
+      - name: Attach to GitHub Release
+        # Only on tag pushes — workflow_dispatch is a dry run.
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/${{ steps.package.outputs.package }}
+            dist/${{ steps.package.outputs.package }}.sha256
+          fail_on_unmatched_files: true
+          generate_release_notes: true

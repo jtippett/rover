@@ -54,8 +54,7 @@ defmodule Rover.MixProject do
       maintainers: ["James Tippett"],
       licenses: ["MPL-2.0"],
       links: %{"GitHub" => @source_url},
-      files:
-        ~w(lib native/rover_runtime/src native/rover_runtime/Cargo.toml
+      files: ~w(lib native/rover_runtime/src native/rover_runtime/Cargo.toml
            mix.exs README.md LICENSE)
     ]
   end

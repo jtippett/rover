@@ -181,7 +181,8 @@ defmodule Rover.Browser do
      ])}
   rescue
     e in ArgumentError ->
-      {:error, Error.exception(reason: :runtime, message: "Port.open failed: #{Exception.message(e)}")}
+      {:error,
+       Error.exception(reason: :runtime, message: "Port.open failed: #{Exception.message(e)}")}
   catch
     :error, reason ->
       {:error, Error.exception(reason: :runtime, message: "Port.open failed: #{inspect(reason)}")}
@@ -276,13 +277,17 @@ defmodule Rover.Browser do
 
   defp response_to_reply(%{"kind" => "ack"}), do: {:ok, :ok}
   defp response_to_reply(%{"kind" => "error"} = frame), do: {:error, decode_error(frame)}
+
   defp response_to_reply(%{"kind" => "page_info", "url" => url, "title" => title}),
     do: {:ok, %{url: url, title: title}}
 
   defp response_to_reply(%{"kind" => "text", "string" => s}), do: {:ok, s}
   defp response_to_reply(%{"kind" => "texts", "strings" => s}) when is_list(s), do: {:ok, s}
   defp response_to_reply(%{"kind" => "value", "value" => v}), do: {:ok, decode_value(v)}
-  defp response_to_reply(%{"kind" => "image", "bytes" => bytes}), do: {:ok, iodata_to_binary(bytes)}
+
+  defp response_to_reply(%{"kind" => "image", "bytes" => bytes}),
+    do: {:ok, iodata_to_binary(bytes)}
+
   defp response_to_reply(%{"kind" => "cookies", "cookies" => cookies}), do: {:ok, cookies}
 
   defp response_to_reply(other) do
@@ -377,8 +382,7 @@ defmodule Rover.Browser do
 
   defp send_init(state, opts, timeout) do
     init_request =
-      {:init,
-       Keyword.take(opts, [:proxy, :user_agent, :viewport])}
+      {:init, Keyword.take(opts, [:proxy, :user_agent, :viewport])}
 
     {id, state} = assign_id(state)
     payload = Protocol.encode_request(id, init_request)

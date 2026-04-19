@@ -205,7 +205,9 @@ defmodule Rover do
 
   defp maybe_screenshot(_browser, false), do: {:ok, nil}
   defp maybe_screenshot(browser, true), do: screenshot(browser, format: :png)
-  defp maybe_screenshot(browser, format) when format in [:png, :jpeg], do: screenshot(browser, format: format)
+
+  defp maybe_screenshot(browser, format) when format in [:png, :jpeg],
+    do: screenshot(browser, format: format)
 
   # ── long-lived-browser API ────────────────────────────────────────────────
 

@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  elixir:
+    name: Elixir (OTP ${{ matrix.otp }}, Elixir ${{ matrix.elixir }})
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - otp: "27"
+            elixir: "1.17"
+          - otp: "28"
+            elixir: "1.19"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ matrix.elixir }}
+
+      - name: Restore deps & _build
+        uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build
+          key: mix-${{ runner.os }}-otp${{ matrix.otp }}-elixir${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            mix-${{ runner.os }}-otp${{ matrix.otp }}-elixir${{ matrix.elixir }}-
+
+      - run: mix deps.get
+      - run: mix format --check-formatted
+      - run: mix compile --warnings-as-errors
+      - run: mix test --exclude integration
+
+  rust-fmt:
+    name: Rust fmt
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - name: rustfmt --check
+        # Invoke rustfmt directly on our source files — this skips cargo's
+        # dep-graph resolution, which would otherwise require the Servo
+        # clone just to format-check a handful of files.
+        run: rustfmt --edition 2024 --check native/rover_runtime/src/*.rs
