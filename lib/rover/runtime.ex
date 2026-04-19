@@ -51,7 +51,7 @@ defmodule Rover.Runtime do
   @spec binary_path() :: {:ok, Path.t()} | :error
   def binary_path do
     Enum.find_value(candidates(), :error, fn candidate ->
-      if (candidate && File.regular?(candidate)) and executable?(candidate) do
+      if is_binary(candidate) and File.regular?(candidate) and executable?(candidate) do
         {:ok, candidate}
       end
     end)
