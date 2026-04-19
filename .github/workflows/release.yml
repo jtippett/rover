@@ -116,4 +116,8 @@ jobs:
             dist/${{ steps.package.outputs.package }}
             dist/${{ steps.package.outputs.package }}.sha256
           fail_on_unmatched_files: true
-          generate_release_notes: true
+          # Any tag with a dash (v0.1.0-rc.0, v0.1.0-beta.1, …) is a pre-release.
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          # Only one matrix job generates notes — otherwise each of the three
+          # jobs appends its own copy to the release body.
+          generate_release_notes: ${{ matrix.target == 'x86_64-unknown-linux-gnu' }}
