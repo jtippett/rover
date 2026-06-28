@@ -121,3 +121,44 @@ jobs:
           # Only one matrix job generates notes — otherwise each of the three
           # jobs appends its own copy to the release body.
           generate_release_notes: ${{ matrix.target == 'x86_64-unknown-linux-gnu' }}
+
+  # Generate the checksum file from the artifacts the build job just attached to
+  # the GitHub release, then publish to Hex. Gated by the `hex` environment:
+  # GitHub pauses here for a required reviewer to approve, so you eyeball the
+  # release before anything ships. No manual checksum commit, no re-tag.
+  publish:
+    name: Publish to Hex
+    needs: build
+    runs-on: ubuntu-latest
+    # Tag pushes only — workflow_dispatch is a dry run that never publishes.
+    if: startsWith(github.ref, 'refs/tags/v')
+    environment: hex
+    env:
+      # Skip the :rover_download compiler: publishing ships the Rust sources +
+      # checksum file, not the binary, so there's no need to build Servo here.
+      ROVER_BUILD: "1"
+      HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: "28"
+          elixir-version: "1.19"
+
+      - name: Fetch dependencies
+        run: mix deps.get
+
+      # Downloads each released tarball, hashes it, and writes
+      # checksum-rover_runtime.exs — which the Hex package then carries so the
+      # :rover_download compiler can verify downloads on consumers' machines.
+      - name: Generate checksums from the released artifacts
+        run: mix rover.runtime.download --all --print
+
+      - name: Publish package to Hex
+        run: mix hex.publish package --yes
+
+      - name: Publish docs to HexDocs
+        continue-on-error: true
+        run: mix hex.publish docs --yes

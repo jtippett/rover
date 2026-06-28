@@ -10,6 +10,10 @@ erl_crash.dump
 /config/*.secret.exs
 .elixir_ls/
 
+# Precompiled rover_runtime binary, downloaded into priv/native at `mix compile`
+# by the :rover_download compiler. Never committed — fetched per release.
+/priv/native/
+
 # Rust
 /native/*/target/
 # Cargo.lock is committed: rover_runtime is a binary crate, and pinning
@@ -19,8 +23,11 @@ erl_crash.dump
 # Servo source checkout (local convenience only — library depends on servo via git in Cargo.toml)
 /servo_rust/
 
-# Precompiled NIF checksums — regenerated per release
-# checksum-*.exs  # keep these, actually; commit when releasing
+# ExUnit @tag :tmp_dir scratch (test/rover/precompiled_test.exs)
+/tmp/
+
+# checksum-rover_runtime.exs is committed (regenerated per release, verifies the
+# downloaded binary) — do NOT ignore it.
 
 # macOS
 .DS_Store

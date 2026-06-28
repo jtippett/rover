@@ -7,9 +7,9 @@ defmodule Rover.Runtime do
   #   1. Environment variable `ROVER_RUNTIME_BIN` — absolute path. Useful for
   #      CI and local dev when the binary lives outside the project.
   #
-  #   2. `priv/native/rover_runtime` — the release layout. When we ship
-  #      precompiled binaries via GitHub Releases (see `Rover.Runtime.Download`
-  #      in a future release), they land here.
+  #   2. `priv/native/rover_runtime` — the release layout. The `:rover_download`
+  #      Mix compiler (`Mix.Tasks.Compile.RoverDownload`) fetches the precompiled
+  #      binary from the GitHub release into here at `mix compile`.
   #
   #   3. `native/rover_runtime/target/release/rover_runtime` — release build
   #      via `mix rover.build`.
@@ -38,9 +38,10 @@ defmodule Rover.Runtime do
 
           Options:
 
-            * Build it:  mix rover.build
+            * Recompile to download the precompiled binary:  mix deps.compile rover
+              (or `mix compile` in this project) — fetched from the GitHub release.
+            * Build it from source:  ROVER_BUILD=1 mix rover.build
             * Point at it with the ROVER_RUNTIME_BIN environment variable.
-            * Install precompiled binaries (not yet available in 0.1).
 
           Looked in:
           #{candidates() |> Enum.map_join("\n", &"  - #{&1}")}
