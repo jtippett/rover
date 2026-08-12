@@ -503,12 +503,12 @@ impl Engine {
 
         self.servo
             .site_data_manager()
-            .set_cookie_for_url(url, parsed);
+            .set_cookie_for_url(url, parsed, None);
         Ok(())
     }
 
     fn clear_cookies(&mut self) -> Result<()> {
-        self.servo.site_data_manager().clear_cookies();
+        self.servo.site_data_manager().clear_cookies(None);
         Ok(())
     }
 

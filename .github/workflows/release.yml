@@ -58,7 +58,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: servo/servo
-          ref: 678f9d7a47778d2a02ca5e1d2ee4b3cd2b3c2bc8
+          ref: 0a5c50e52a65a13017290bc843afafe3758fd0ac
           path: servo_rust
 
       - name: Cache cargo registry + target

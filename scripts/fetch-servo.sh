@@ -11,7 +11,7 @@
 set -euo pipefail
 
 # Pinned Servo revision. Update this, Cargo.toml, and release.yml together.
-REV="${1:-678f9d7a47778d2a02ca5e1d2ee4b3cd2b3c2bc8}"
+REV="${1:-0a5c50e52a65a13017290bc843afafe3758fd0ac}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DEST="$ROOT/servo_rust"
 
