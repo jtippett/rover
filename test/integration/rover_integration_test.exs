@@ -131,4 +131,53 @@ defmodule Rover.IntegrationTest do
              end)
     end
   end
+
+  describe "per-instance proxy isolation" do
+    test "two concurrent browsers route through their own proxies" do
+      {:ok, eu_proxy} = Rover.Test.Proxy.start("eu-egress")
+      {:ok, us_proxy} = Rover.Test.Proxy.start("us-egress")
+
+      {:ok, eu_browser} = Rover.start_link(proxy: Rover.Test.Proxy.url(eu_proxy))
+      {:ok, us_browser} = Rover.start_link(proxy: Rover.Test.Proxy.url(us_proxy))
+
+      on_exit(fn ->
+        Rover.stop(eu_browser)
+        Rover.stop(us_browser)
+        Rover.Test.Proxy.stop(eu_proxy)
+        Rover.Test.Proxy.stop(us_proxy)
+      end)
+
+      navigations =
+        [
+          {eu_browser, "eu-egress"},
+          {us_browser, "us-egress"}
+        ]
+        |> Enum.map(fn {browser, expected_marker} ->
+          Task.async(fn ->
+            {
+              expected_marker,
+              Rover.navigate(browser, "http://rover-proxy-isolation.invalid/page"),
+              Rover.get_text(browser, "#proxy-marker")
+            }
+          end)
+        end)
+        |> Enum.map(&Task.await(&1, 30_000))
+
+      assert [
+               {"eu-egress", {:ok, %{title: "eu-egress"}}, {:ok, "eu-egress"}},
+               {"us-egress", {:ok, %{title: "us-egress"}}, {:ok, "us-egress"}}
+             ] = navigations
+
+      for proxy <- [eu_proxy, us_proxy] do
+        requests = Rover.Test.Proxy.requests(proxy)
+
+        assert Enum.any?(
+                 requests,
+                 &String.starts_with?(&1, "CONNECT rover-proxy-isolation.invalid")
+               )
+
+        assert Enum.any?(requests, &String.starts_with?(&1, "GET /page HTTP/1.1"))
+      end
+    end
+  end
 end

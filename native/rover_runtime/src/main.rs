@@ -18,9 +18,12 @@ use std::process::ExitCode;
 use log::{error, info};
 
 fn main() -> ExitCode {
-    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("info"))
-        .target(env_logger::Target::Stderr)
-        .init();
+    env_logger::Builder::from_env(
+        env_logger::Env::default()
+            .default_filter_or("warn,rover_runtime=info,profile_traits::mem=error"),
+    )
+    .target(env_logger::Target::Stderr)
+    .init();
 
     if io::stdin().is_terminal() {
         eprintln!(

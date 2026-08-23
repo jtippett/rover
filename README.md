@@ -10,9 +10,9 @@ running.
 The API is modelled after [`Req`](https://hexdocs.pm/req): small, composable,
 and sensible by default.
 
-> **Status:** 0.1 — proof-of-concept. The Rust runtime embeds Servo via path
-> dependency during development; precompiled binaries via GitHub Releases are
-> planned for the first tagged release.
+> **Status:** 0.1 — proof-of-concept. Tagged releases ship a precompiled runtime
+> for Apple Silicon macOS and x86-64/AArch64 Linux; development builds embed a
+> pinned Servo checkout from source.
 
 ## Why Rover?
 
@@ -37,18 +37,25 @@ def deps do
 end
 ```
 
-Rover ships a companion Rust binary, `rover_runtime`, that embeds Servo. For
-0.1 you build it from source (precompiled distribution comes next):
+Rover ships a companion Rust binary, `rover_runtime`, that embeds Servo. On a
+supported host, `mix compile` downloads the matching binary from the GitHub
+release and verifies its SHA-256 checksum automatically:
 
 ```shell
 mix deps.get
-mix rover.build
+mix compile
 ```
 
-Servo's first compile is long (10–30 min on an M-series Mac; a cold
-SpiderMonkey build is the tall pole). Subsequent builds are fast thanks to
-cargo's incremental cache. The binary is discovered automatically, but you can
-override with:
+Precompiled targets are Apple Silicon macOS and x86-64/AArch64 glibc Linux. To
+work on Rover itself, fetch the pinned Servo revision and build the runtime from
+source (the first build can take 10–30 minutes):
+
+```shell
+scripts/fetch-servo.sh
+ROVER_BUILD=1 mix rover.build
+```
+
+The binary is discovered automatically. You can override its location with:
 
 ```shell
 ROVER_RUNTIME_BIN=/absolute/path/to/rover_runtime iex -S mix
@@ -530,8 +537,6 @@ Rover.Runtime                    ─ internal — binary path resolution
 ## Not yet
 
 - `Rover.Pool` — recyclable browsers keyed by proxy.
-- Precompiled runtime distribution via GitHub Releases + checksum
-  verification.
 - `[:rover, :fetch, :*]` telemetry events.
 - Download capture / file interception.
 - Multiple WebViews per engine — deliberately out of scope. One browser =

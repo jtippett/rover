@@ -37,6 +37,7 @@ defmodule Rover.Browser do
   require Logger
 
   @default_call_timeout 60_000
+  @shutdown_grace 2_000
 
   @doc """
   Start a browser linked to the caller.
@@ -245,10 +246,12 @@ defmodule Rover.Browser do
   def terminate(_reason, %{port: nil}), do: :ok
 
   def terminate(_reason, %{port: port}) do
-    # Best-effort graceful shutdown: ask the runtime to exit, give it a beat,
-    # then close the port. Swallow any already-dead errors.
+    # Give the runtime time to acknowledge Shutdown and exit before closing the
+    # Port. Closing immediately races its final stdout write and turns a normal
+    # browser stop into a noisy Broken pipe error in rover_runtime.
     shutdown_payload = Protocol.encode_request(0xFFFF_FFFF, :shutdown)
     _ = send_payload(port, shutdown_payload)
+    await_runtime_exit(port, System.monotonic_time(:millisecond) + @shutdown_grace)
     close_port(port)
     :ok
   end
@@ -347,6 +350,25 @@ defmodule Rover.Browser do
     end
 
     :ok
+  end
+
+  defp await_runtime_exit(port, deadline) do
+    timeout = max(deadline - System.monotonic_time(:millisecond), 0)
+
+    receive do
+      {^port, {:exit_status, _status}} ->
+        :ok
+
+      {:EXIT, ^port, _reason} ->
+        :ok
+
+      {^port, {:data, _frame}} ->
+        # The Shutdown Ack arrives before the OS process exits. Keep the Port
+        # open until the exit status follows so Rust can finish dropping Servo.
+        await_runtime_exit(port, deadline)
+    after
+      timeout -> :timeout
+    end
   end
 
   # ── startup helpers ────────────────────────────────────────────────────────

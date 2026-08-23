@@ -16,6 +16,14 @@ The `## [Unreleased]` section is rolled into a dated, versioned heading by
   and verifies it against `checksum-rover_runtime.exs`, so consumers install
   without a Rust toolchain or a Servo build. Set `ROVER_BUILD=1` to skip the
   download and use a local `cargo` build instead.
+- End-to-end integration coverage proving two concurrent browsers preserve
+  independent proxy routing.
+
+### Fixed
+- Graceful browser shutdown now waits for `rover_runtime` to acknowledge and
+  exit before closing its Port, avoiding false `Broken pipe` errors. Default
+  runtime logging also suppresses Servo's expected memory-profiler teardown
+  warnings.
 
 ## 0.1.0
 
