@@ -10,22 +10,7 @@ The `## [Unreleased]` section is rolled into a dated, versioned heading by
 
 ## [Unreleased]
 
-### Added
-- Precompiled `rover_runtime` binaries: a `:rover_download` Mix compiler fetches
-  the prebuilt binary for the host target from the GitHub release at `mix compile`
-  and verifies it against `checksum-rover_runtime.exs`, so consumers install
-  without a Rust toolchain or a Servo build. Set `ROVER_BUILD=1` to skip the
-  download and use a local `cargo` build instead.
-- End-to-end integration coverage proving two concurrent browsers preserve
-  independent proxy routing.
-
-### Fixed
-- Graceful browser shutdown now waits for `rover_runtime` to acknowledge and
-  exit before closing its Port, avoiding false `Broken pipe` errors. Default
-  runtime logging also suppresses Servo's expected memory-profiler teardown
-  warnings.
-
-## 0.1.0
+## 0.1.0 - 2026-08-23
 
 Initial release. Drive the Servo web engine from Elixir — one OS process per
 browser, with per-instance proxy config, cookies, JS evaluation, and input
@@ -45,3 +30,17 @@ automation.
 - Cookie management via Servo's `SiteDataManager` (`get_cookies`, `set_cookie`,
   `clear_*`).
 - Per-instance proxy routing — the point of Rover.
+- Precompiled `rover_runtime` binaries: a `:rover_download` Mix compiler fetches
+  the prebuilt binary for the host target from the GitHub release at `mix compile`
+  and verifies it against `checksum-rover_runtime.exs`, so consumers install
+  without a Rust toolchain or a Servo build. Set `ROVER_BUILD=1` to skip the
+  download and use a local `cargo` build instead.
+- End-to-end integration coverage proving two concurrent browsers preserve
+  independent proxy routing.
+
+### Fixed
+- Graceful browser shutdown now waits for `rover_runtime` to acknowledge and
+  exit before closing its Port, avoiding false `Broken pipe` errors. Default
+  runtime logging also suppresses Servo's expected memory-profiler teardown
+  warnings.
+
