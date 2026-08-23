@@ -58,11 +58,14 @@ defmodule Rover.MixProject do
 
   defp package do
     [
+      # Hex name differs from the OTP app (`:rover` is taken on Hex by an
+      # unrelated package). Modules and the app name stay `Rover` / `:rover`.
+      name: "rover_browser",
       maintainers: ["James Tippett"],
       licenses: ["MPL-2.0"],
       links: %{
         "GitHub" => @source_url,
-        "Changelog" => "#{@source_url}/blob/main/CHANGELOG.md"
+        "Changelog" => "#{@source_url}/blob/master/CHANGELOG.md"
       },
       # Ship the checksum file + Rust sources so consumers on unsupported targets
       # (or with ROVER_BUILD=1) can build rover_runtime from source.

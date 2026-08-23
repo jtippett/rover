@@ -74,6 +74,12 @@ defmodule Release do
     src = File.read!("mix.exs")
     [_, version] = Regex.run(~r/@version "([^"]+)"/, src) || die("no @version in mix.exs")
     [_, app] = Regex.run(~r/app:\s*:([a-z0-9_]+)/, src) || die("no `app:` in mix.exs")
+    # Hex package name may differ from the app name (package: [name: "..."]).
+    app =
+      case Regex.run(~r/name:\s*"([a-z0-9_]+)"/, src) do
+        [_, hex_name] -> hex_name
+        _ -> app
+      end
     {app, version}
   end
 

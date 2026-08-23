@@ -32,7 +32,7 @@ Add `:rover` to your deps in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:rover, "~> 0.1"}
+    {:rover, "~> 0.1", hex: :rover_browser}
   ]
 end
 ```
