@@ -80,6 +80,7 @@ defmodule Release do
         [_, hex_name] -> hex_name
         _ -> app
       end
+
     {app, version}
   end
 
@@ -103,12 +104,16 @@ defmodule Release do
   defp roll_changelog!(new) do
     path = "CHANGELOG.md"
 
+    # Anchor to a whole line: the changelog's intro prose mentions
+    # `## [Unreleased]` in backticks, which a bare substring replace mangles.
+    heading_re = ~r/^## \[Unreleased\]$/m
+
     with true <- File.exists?(path),
          src = File.read!(path),
-         true <- String.contains?(src, "## [Unreleased]") do
+         true <- Regex.match?(heading_re, src) do
       today = Date.to_iso8601(Date.utc_today())
       heading = "## [Unreleased]\n\n## #{new} - #{today}"
-      File.write!(path, String.replace(src, "## [Unreleased]", heading, global: false))
+      File.write!(path, Regex.replace(heading_re, src, heading, global: false))
     else
       _ -> :ok
     end

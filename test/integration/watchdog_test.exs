@@ -29,12 +29,18 @@ defmodule Rover.WatchdogTest do
 
     # Holder keeps the FIFO's write end open so the runtime never sees EOF.
     {_, 0} =
-      System.cmd("sh", ["-c", "( sleep 30 > #{fifo} & echo $! > #{holder_pidfile} ) > /dev/null 2>&1"])
+      System.cmd("sh", [
+        "-c",
+        "( sleep 30 > #{fifo} & echo $! > #{holder_pidfile} ) > /dev/null 2>&1"
+      ])
 
     # This shell is the runtime's parent; it exits as soon as System.cmd
     # returns, orphaning the runtime (re-parented to pid 1) with stdin open.
     {_, 0} =
-      System.cmd("sh", ["-c", "( #{bin} < #{fifo} > /dev/null 2>&1 & echo $! > #{runtime_pidfile} ) > /dev/null 2>&1"])
+      System.cmd("sh", [
+        "-c",
+        "( #{bin} < #{fifo} > /dev/null 2>&1 & echo $! > #{runtime_pidfile} ) > /dev/null 2>&1"
+      ])
 
     holder_pid = File.read!(holder_pidfile) |> String.trim()
     runtime_pid = File.read!(runtime_pidfile) |> String.trim()
