@@ -14,8 +14,33 @@ mod wire;
 
 use std::io::{self, IsTerminal};
 use std::process::ExitCode;
+use std::thread;
+use std::time::Duration;
 
-use log::{error, info};
+use log::{error, info, warn};
+
+/// Exit when the parent (the BEAM's spawner) dies, no matter what the main
+/// thread is doing. The wire loop's exit paths — Shutdown frame, stdin EOF,
+/// stdout write failure — all require the main thread to be back in the read
+/// loop; if Servo wedges mid-operation, none of them ever fire and the
+/// process outlives the BEAM, spinning. Observed in the wild: orphaned
+/// runtimes at ~150% CPU for days. `process::exit` on purpose — destructors
+/// may be exactly what is wedged.
+fn spawn_parent_watchdog() {
+    let initial_parent = std::os::unix::process::parent_id();
+
+    thread::spawn(move || {
+        loop {
+            thread::sleep(Duration::from_secs(1));
+
+            let parent = std::os::unix::process::parent_id();
+            if parent == 1 || parent != initial_parent {
+                warn!("parent process gone (ppid now {parent}); exiting");
+                std::process::exit(0);
+            }
+        }
+    });
+}
 
 fn main() -> ExitCode {
     env_logger::Builder::from_env(
@@ -34,6 +59,8 @@ fn main() -> ExitCode {
     }
 
     info!("rover_runtime v{} starting", env!("CARGO_PKG_VERSION"));
+
+    spawn_parent_watchdog();
 
     match wire::run() {
         Ok(()) => {
