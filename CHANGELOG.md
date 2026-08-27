@@ -10,6 +10,14 @@ The `## [Unreleased]` section is rolled into a dated, versioned heading by
 
 ## [Unreleased]
 
+### Fixed
+- `rover_runtime` now exits when the owning BEAM dies even if Servo is wedged
+  mid-operation. A parent-death watchdog thread polls `getppid` and hard-exits
+  once re-parented; previously all exit paths (Shutdown frame, stdin EOF,
+  stdout write failure) required the main thread to be back in the wire read
+  loop, so a wedged engine left orphaned runtimes spinning at full CPU
+  indefinitely after the BEAM was gone.
+
 ## 0.1.0 - 2026-08-23
 
 Initial release. Drive the Servo web engine from Elixir — one OS process per
