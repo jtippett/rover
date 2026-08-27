@@ -5,7 +5,9 @@ All notable changes to Rover are documented here. The format follows
 adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html) against
 Rover's own Elixir API (not Servo's).
 
-The `## [Unreleased]` section is rolled into a dated, versioned heading by
+The `## [Unreleased]
+
+## 0.1.1 - 2026-08-27` section is rolled into a dated, versioned heading by
 `scripts/release.exs` (`just release`) when a release is cut.
 
 ## [Unreleased]
