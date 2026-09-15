@@ -29,7 +29,7 @@ exact revision and bump it deliberately.
 
 1. Pick a new revision from https://github.com/servo/servo (a commit that builds;
    prefer one CI is green on).
-2. **Update all three places together** (they must match, or CI clones a different
+2. **Update all four places together** (they must match, or CI clones a different
    Servo than the path dep expects):
    - `native/rover_runtime/Cargo.toml` — the `Pinned Servo revision` comment **and**
      keep the `servo = { path = ... }` dep pointing at `../../servo_rust`.
@@ -41,7 +41,11 @@ exact revision and bump it deliberately.
    just servo                       # clone/checkout Servo at the new rev
    cd native/rover_runtime && cargo update && cargo build --release
    cd ../.. && just test            # ROVER_BUILD=1 mix test
+   ROVER_BUILD=1 ROVER_RUNTIME_BIN="$PWD/native/rover_runtime/target/release/rover_runtime" mix test --include integration
    ```
+   The default test suite excludes integration tests. The last command explicitly
+   runs them against the new local binary, including when a released binary is
+   already installed in `priv/native`.
 4. Fix any API drift in `native/rover_runtime/src/*.rs` (most likely: `Servo` /
    `WebView` builder changes, `evaluate_javascript`, `take_screenshot`,
    `SiteDataManager`). **Map** the new API — don't reimplement engine behavior

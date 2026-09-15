@@ -10,6 +10,12 @@ The `## [Unreleased]` section is rolled into a dated, versioned heading by
 
 ## [Unreleased]
 
+### Changed
+- Update Servo from `683eab21c0b6` (2026-08-23) to `49503282e463`
+  (2026-09-15), and refresh the runtime's Rust dependency lockfile.
+- Update compatible Elixir dependencies, including Telemetry, Bandit, Plug,
+  and ExDoc.
+
 ## 0.1.1 - 2026-08-27
 
 ### Fixed
@@ -53,4 +59,3 @@ automation.
   exit before closing its Port, avoiding false `Broken pipe` errors. Default
   runtime logging also suppresses Servo's expected memory-profiler teardown
   warnings.
-
