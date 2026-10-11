@@ -10,6 +10,8 @@ The `## [Unreleased]` section is rolled into a dated, versioned heading by
 
 ## [Unreleased]
 
+## 0.1.2 - 2026-10-11
+
 ### Changed
 - Update Servo from `683eab21c0b6` (2026-08-23) to `dc3d95938710`
   (2026-10-11, Servo 0.7), and refresh the runtime's Rust dependency lockfile.

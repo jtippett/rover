@@ -4457,7 +4457,7 @@ dependencies = [
 
 [[package]]
 name = "rover_runtime"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "cookie 0.18.2",
  "dpi",
