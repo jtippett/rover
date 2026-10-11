@@ -58,7 +58,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: servo/servo
-          ref: 49503282e4630eae3af2e4666d7df8a36215548c
+          ref: dc3d95938710f9ee017d51b6168adeb7b5b003a5
           path: servo_rust
 
       - name: Cache cargo registry + target
@@ -71,7 +71,7 @@ jobs:
 
       - name: Build rover_runtime (release)
         working-directory: native/rover_runtime
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --locked --release --target ${{ matrix.target }}
 
       - name: Package
         id: package

@@ -11,10 +11,24 @@ The `## [Unreleased]` section is rolled into a dated, versioned heading by
 ## [Unreleased]
 
 ### Changed
-- Update Servo from `683eab21c0b6` (2026-08-23) to `49503282e463`
-  (2026-09-15), and refresh the runtime's Rust dependency lockfile.
+- Update Servo from `683eab21c0b6` (2026-08-23) to `dc3d95938710`
+  (2026-10-11, Servo 0.7), and refresh the runtime's Rust dependency lockfile.
+- Upgrade SpiderMonkey to 153.3 ESR and inherit CSS/text module imports,
+  CSS Grid and form selector fixes, timer cleanup, and HTTP connection limits.
+- JavaScript evaluation now works on documents with restrictive Content Security
+  Policy, through Servo's embedder evaluation API.
 - Update compatible Elixir dependencies, including Telemetry, Bandit, Plug,
   and ExDoc.
+
+### Fixed
+- Navigation waits for a fresh load-completion event, avoiding intermittent empty
+  titles and reads of the previous or incomplete document. Redirects and repeated
+  navigation to the same URL now wait for the destination document; fragment
+  changes continue to work without waiting for a new document load.
+- Keep each browser's temporary storage profile alive for its lifetime, avoiding
+  Servo's ClientStorage SQLite initialization failures.
+- Release tooling keeps the Rust runtime version and lockfile in sync with the
+  Elixir package version.
 
 ## 0.1.1 - 2026-08-27
 

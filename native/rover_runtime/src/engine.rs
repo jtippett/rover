@@ -7,7 +7,7 @@
 //! Everything Servo-facing stays on the main thread: Servo contains `!Send`
 //! and `!Sync` types and must be driven from one thread.
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -21,7 +21,7 @@ use image::{
 use log::info;
 use servo::{
     DevicePoint, EventLoopWaker, InputEvent, JSValue, LoadStatus, MouseButton, MouseButtonAction,
-    MouseButtonEvent, MouseMoveEvent, Preferences, RenderingContext, Servo, ServoBuilder,
+    MouseButtonEvent, MouseMoveEvent, Opts, Preferences, RenderingContext, Servo, ServoBuilder,
     SoftwareRenderingContext, WebView, WebViewBuilder, WebViewDelegate, WebViewPoint,
 };
 use url::Url;
@@ -40,7 +40,8 @@ pub struct Engine {
     webview: WebView,
     _rendering_context: Rc<SoftwareRenderingContext>,
     _waker: Arc<AtomicBool>,
-    _delegate: Rc<NullDelegate>,
+    delegate: Rc<BrowserDelegate>,
+    _storage_dir: tempfile::TempDir,
 }
 
 impl Engine {
@@ -70,12 +71,22 @@ impl Engine {
         preferences.network_http_proxy_uri = proxy.clone();
         preferences.network_https_proxy_uri = proxy;
 
+        // Keep the profile alive for the browser's lifetime. Servo's default
+        // temporary ClientStorage directory can be dropped before its storage
+        // thread opens SQLite, causing initialization failures.
+        let storage_dir = tempfile::tempdir()
+            .map_err(|e| RoverError::Runtime(format!("browser storage directory: {e}")))?;
+        let opts = Opts {
+            config_dir: Some(storage_dir.path().to_path_buf()),
+            ..Opts::default()
+        };
         let servo = ServoBuilder::default()
+            .opts(opts)
             .preferences(preferences)
             .event_loop_waker(Box::new(Waker(waker.clone())))
             .build();
 
-        let delegate = Rc::new(NullDelegate);
+        let delegate = Rc::new(BrowserDelegate::default());
 
         // Build the single WebView pointed at about:blank. Subsequent navigate
         // requests reuse this WebView via webview.load(url).
@@ -90,7 +101,8 @@ impl Engine {
             webview,
             _rendering_context: rendering_context,
             _waker: waker,
-            _delegate: delegate,
+            delegate,
+            _storage_dir: storage_dir,
         };
 
         engine.wait_for_load(30_000)?;
@@ -147,23 +159,33 @@ impl Engine {
     fn navigate(&mut self, url: &str, timeout_ms: u64) -> Result<PageInfo> {
         let parsed =
             Url::parse(url).map_err(|e| RoverError::Navigation(format!("bad URL: {e}")))?;
+        let fragment_navigation = self.webview.url().is_some_and(|mut current| {
+            let fragment_changed = current.fragment() != parsed.fragment();
+            current.set_fragment(None);
+            let mut target = parsed.clone();
+            target.set_fragment(None);
+            fragment_changed && current == target
+        });
+        let delegate = self.delegate.clone();
+        let completed = delegate.completed_loads.get();
         self.webview.load(parsed.clone());
 
-        // `load_status` may already be `Complete` from the previous page —
-        // waiting on it immediately would short-circuit. Instead, wait for
-        // the WebView's URL to reflect our target (meaning Servo has started
-        // processing the navigation), *then* wait for completion.
-        let webview = self.webview.clone();
-        let target = parsed;
+        if fragment_navigation {
+            // Same-document navigation has no new document load to complete.
+            let webview = self.webview.clone();
+            self.spin_until(timeout_ms, || webview.url().as_ref() != Some(&parsed))?;
+        } else {
+            // URL/history updates can precede the new document's load events.
+            // Wait for a fresh completion notification, not the previous page's
+            // cached Complete state. This also handles redirects and reloads of
+            // the same URL without requiring an intermediate status to be seen.
+            self.spin_until(timeout_ms, || delegate.completed_loads.get() == completed)?;
+        }
 
-        self.spin_until(timeout_ms, || {
-            webview.url().map(|u| u != target).unwrap_or(true)
-        })?;
-
-        let webview = self.webview.clone();
-        self.spin_until(timeout_ms, || webview.load_status() != LoadStatus::Complete)?;
-
-        Ok(self.page_info())
+        Ok(PageInfo {
+            url: self.current_url()?,
+            title: self.title()?,
+        })
     }
 
     fn current_url(&mut self) -> Result<String> {
@@ -174,17 +196,6 @@ impl Engine {
             .unwrap_or_else(|| "about:blank".into()))
     }
 
-    fn page_info(&self) -> PageInfo {
-        PageInfo {
-            url: self
-                .webview
-                .url()
-                .map(|u| u.to_string())
-                .unwrap_or_else(|| "about:blank".into()),
-            title: self.webview.page_title().unwrap_or_default(),
-        }
-    }
-
     // ── content ────────────────────────────────────────────────────────────
 
     fn content(&mut self) -> Result<String> {
@@ -193,9 +204,7 @@ impl Engine {
     }
 
     fn title(&mut self) -> Result<String> {
-        if let Some(title) = self.webview.page_title() {
-            return Ok(title);
-        }
+        // Title notifications are asynchronous and may lag load completion.
         let value = self.evaluate_raw("document.title")?;
         Ok(string_of(value).unwrap_or_default())
     }
@@ -716,9 +725,17 @@ impl EventLoopWaker for Waker {
 }
 
 #[derive(Default)]
-struct NullDelegate;
+struct BrowserDelegate {
+    completed_loads: Cell<u64>,
+}
 
-impl WebViewDelegate for NullDelegate {
+impl WebViewDelegate for BrowserDelegate {
+    fn notify_load_status_changed(&self, _webview: WebView, status: LoadStatus) {
+        if status == LoadStatus::Complete {
+            self.completed_loads.set(self.completed_loads.get() + 1);
+        }
+    }
+
     fn notify_new_frame_ready(&self, webview: WebView) {
         webview.paint();
     }

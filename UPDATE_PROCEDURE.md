@@ -62,7 +62,8 @@ exact revision and bump it deliberately.
 Use `just release` (`scripts/release.exs`) for steps 1–2; the rest is the workflow
 plus the checksum generation, which CI does for you.
 
-1. **Bump the version.** `just release` shows current vs. published, asks
+1. **Bump the version.** `just release` keeps `mix.exs`, the runtime's
+   `Cargo.toml`, and its `Cargo.lock` package version in sync, shows current vs. published, asks
    patch/minor/major, rolls the `CHANGELOG.md` `[Unreleased]` section into a dated
    heading, then (on confirm) commits, tags `vX.Y.Z`, and pushes — which triggers
    `release.yml`.

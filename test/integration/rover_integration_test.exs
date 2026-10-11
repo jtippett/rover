@@ -110,6 +110,56 @@ defmodule Rover.IntegrationTest do
       assert body =~ "Hello, Rover."
     end
 
+    test "repeated navigation waits for the new document and title", %{
+      browser: browser,
+      base_url: base_url
+    } do
+      for _ <- 1..5 do
+        assert {:ok, %{title: "Plain"}} = Rover.navigate(browser, base_url <> "/plain")
+        assert {:ok, "Hello, Rover."} = Rover.get_text(browser, "h1")
+        assert {:ok, %{title: "Rendered"}} = Rover.navigate(browser, base_url <> "/rendered")
+        assert {:ok, "Ready"} = Rover.get_text(browser, "#root")
+      end
+    end
+
+    test "navigating to the same URL loads a fresh document", %{
+      browser: browser,
+      base_url: base_url
+    } do
+      titles =
+        for _ <- 1..5 do
+          assert {:ok, %{title: title}} = Rover.navigate(browser, base_url <> "/navigation")
+          assert title =~ "navigation-"
+          assert {:ok, ^title} = Rover.get_text(browser, "body")
+          title
+        end
+
+      assert length(Enum.uniq(titles)) == 5
+    end
+
+    test "navigation follows redirects and supports fragment changes", %{
+      browser: browser,
+      base_url: base_url
+    } do
+      assert {:ok, %{url: url, title: "Plain"}} =
+               Rover.navigate(browser, base_url <> "/redirect", timeout: 5_000)
+
+      assert url == base_url <> "/plain"
+
+      assert {:ok, %{url: fragment_url, title: "Plain"}} =
+               Rover.navigate(browser, url <> "#section", timeout: 5_000)
+
+      assert fragment_url == url <> "#section"
+      assert {:ok, "Hello, Rover."} = Rover.get_text(browser, "h1")
+    end
+
+    test "evaluate works on CSP-restricted documents", %{browser: browser, base_url: base_url} do
+      assert {:ok, %{title: "CSP"}} = Rover.navigate(browser, base_url <> "/csp")
+      assert {:ok, 42} = Rover.evaluate(browser, "6 * 7")
+      assert {:ok, body} = Rover.content(browser)
+      assert body =~ "Restricted"
+    end
+
     test "fill + click completes a form roundtrip", %{browser: browser, base_url: base_url} do
       assert {:ok, _} = Rover.navigate(browser, base_url <> "/form")
 

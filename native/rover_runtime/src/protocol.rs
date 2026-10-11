@@ -35,7 +35,7 @@ pub enum Request {
     /// `document.documentElement.outerHTML`.
     Content,
 
-    /// `document.title` (falls back to JS eval).
+    /// `document.title` from the current document.
     Title,
 
     /// Evaluate a JavaScript expression and return the result.

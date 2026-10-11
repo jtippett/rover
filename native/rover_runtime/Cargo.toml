@@ -17,6 +17,7 @@ serde = { version = "1", features = ["derive"] }
 serde_bytes = "0.11"
 serde_json = "1"
 thiserror = "2"
+tempfile = "3"
 
 # Image encoding for screenshots
 image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
@@ -33,7 +34,7 @@ cookie = "0.18"
 # at this exact rev, so the path dep below resolves identically.
 #
 # Pinned Servo revision (update this, release.yml, and the local clone together):
-#   49503282e4630eae3af2e4666d7df8a36215548c
+#   dc3d95938710f9ee017d51b6168adeb7b5b003a5
 #
 # We use a path dep rather than a git dep so cargo doesn't re-clone the
 # 500MB+ Servo tree on every build in a fresh workspace.

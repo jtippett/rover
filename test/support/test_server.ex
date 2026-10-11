@@ -52,6 +52,26 @@ defmodule Rover.Test.Server do
     put_html(conn, @plain)
   end
 
+  get "/navigation" do
+    # Each request gets a distinct document, even when navigating to the same
+    # URL repeatedly. Delay the response to expose stale load-completion state.
+    Process.sleep(30)
+    marker = "navigation-#{System.unique_integer([:positive, :monotonic])}"
+    put_html(conn, "<html><head><title>#{marker}</title></head><body>#{marker}</body></html>")
+  end
+
+  get "/redirect" do
+    conn
+    |> Plug.Conn.put_resp_header("location", "/plain")
+    |> Plug.Conn.send_resp(302, "")
+  end
+
+  get "/csp" do
+    conn
+    |> Plug.Conn.put_resp_header("content-security-policy", "script-src 'none'")
+    |> put_html("<html><head><title>CSP</title></head><body>Restricted</body></html>")
+  end
+
   @rendered """
   <!doctype html>
   <html><head><title>Pre-render</title></head>

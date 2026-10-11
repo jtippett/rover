@@ -40,22 +40,32 @@ defmodule Release do
     {_, new, _} = choices[prompt("choice [1-3]: ")] || abort()
     unless yes?("bump #{current} → #{new} ?"), do: abort()
 
+    bump_runtime!(current, new)
     bump_mix!(current, new)
     roll_changelog!(new)
 
     IO.puts("\nchanges:")
-    IO.puts(git!(["--no-pager", "diff", "--", "mix.exs", "CHANGELOG.md"]))
+
+    release_files = [
+      "mix.exs",
+      "CHANGELOG.md",
+      "native/rover_runtime/Cargo.toml",
+      "native/rover_runtime/Cargo.lock"
+    ]
+
+    IO.puts(git!(["--no-pager", "diff", "--" | release_files]))
 
     unless yes?("commit, tag v#{new}, and push? (this starts the release build)") do
       IO.puts("""
       Edits left in place, uncommitted.
-      Run `git checkout -- mix.exs CHANGELOG.md` to discard them.
+      Run `git restore mix.exs CHANGELOG.md native/rover_runtime/Cargo.{toml,lock}`
+      to discard them.
       """)
 
       System.halt(0)
     end
 
-    git!(["add", "mix.exs", "CHANGELOG.md"])
+    git!(["add" | release_files])
     git!(["commit", "-m", "Release #{new}"])
     git!(["tag", "-a", "v#{new}", "-m", "v#{new}"])
     git!(["push", "origin", branch])
@@ -98,6 +108,22 @@ defmodule Release do
   defp bump_mix!(old, new) do
     src = File.read!("mix.exs")
     File.write!("mix.exs", String.replace(src, ~s(@version "#{old}"), ~s(@version "#{new}")))
+  end
+
+  defp bump_runtime!(old, new) do
+    manifest = "native/rover_runtime/Cargo.toml"
+    lockfile = "native/rover_runtime/Cargo.lock"
+    manifest_src = File.read!(manifest)
+    lock_src = File.read!(lockfile)
+    manifest_re = ~r/^(version = ")#{Regex.escape(old)}(")$/m
+    lock_re = ~r/(\[\[package\]\]\nname = "rover_runtime"\nversion = ")#{Regex.escape(old)}(")/
+
+    unless Regex.match?(manifest_re, manifest_src) && Regex.match?(lock_re, lock_src) do
+      die("runtime manifest/lockfile versions must match mix.exs (#{old}) before releasing")
+    end
+
+    File.write!(manifest, Regex.replace(manifest_re, manifest_src, "\\g{1}#{new}\\g{2}"))
+    File.write!(lockfile, Regex.replace(lock_re, lock_src, "\\g{1}#{new}\\g{2}"))
   end
 
   # ── CHANGELOG ──────────────────────────────────────────────────────────────
