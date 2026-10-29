@@ -10,6 +10,13 @@ The `## [Unreleased]` section is rolled into a dated, versioned heading by
 
 ## [Unreleased]
 
+### Changed
+- Update Servo from `dc3d95938710` (2026-10-11) to `1c7330c14ace`
+  (2026-10-28), and refresh the runtime's Rust dependency lockfile.
+- Update SpiderMonkey to 153.4 ESR and inherit upstream fixes for form-control
+  state, focus visibility, CORS preflight cache partitioning, and JavaScript
+  JSON attribute handling.
+
 ## 0.1.2 - 2026-10-11
 
 ### Changed

@@ -34,7 +34,7 @@ cookie = "0.18"
 # at this exact rev, so the path dep below resolves identically.
 #
 # Pinned Servo revision (update this, release.yml, and the local clone together):
-#   dc3d95938710f9ee017d51b6168adeb7b5b003a5
+#   1c7330c14ace176afecf61b2d262295edded4494
 #
 # We use a path dep rather than a git dep so cargo doesn't re-clone the
 # 500MB+ Servo tree on every build in a fresh workspace.

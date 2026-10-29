@@ -17,7 +17,7 @@ fmt:
     rustfmt --edition 2024 native/rover_runtime/src/*.rs
 
 # Clone Servo into ./servo_rust at the pinned rev (needed before cargo build).
-servo rev="dc3d95938710f9ee017d51b6168adeb7b5b003a5":
+servo rev="1c7330c14ace176afecf61b2d262295edded4494":
     scripts/fetch-servo.sh {{rev}}
 
 # Build the runtime binary (release). Requires servo_rust/ (run `just servo` first).
